@@ -4,7 +4,7 @@
 
 ---
 
-## 🌾 The Core Problem & Solution
+## � The Core Problem & Solution
 
 *   **The Problem:** Small farmers in remote India lack internet access (4G/5G) and smartphones, excluding them from digital marketplaces. They depend on middlemen who exploit this lack of information.
 *   **The Solution:** A "Phygital" (Physical + Digital) bridge.
@@ -43,6 +43,7 @@
 ### 4. 👮 Role-Based Dashboards (Web PWA)
 *   **Officer App:** For physical physical verification and digital signing.
 *   **Buyer/Vendor Portal:** For placing bids and confirming delivery.
+*   **Auditor Dashboard:** For oversight, dispute resolution, and regulatory compliance checks.
 *   **Tech:** Next.js 14, Tailwind CSS, Framer Motion.
 
 ---
@@ -55,7 +56,7 @@
 | **Backend Logic** | **Python (FastAPI)** | Handles USSD Session State, Language Translation, and IPFS Hashing. |
 | **Trust Layer** | **Hardhat / Solidity** | The Source of Truth. Holds funds and logic. |
 | **Storage** | **IPFS (InterPlanetary File System)** | Stores heavy documents (Images/PDFs) immutably. |
-| **Frontend** | **Next.js 14** | Responsive Web Interface for Officers & Buyers. |
+| **Frontend** | **Next.js 14** | Responsive Web Interface for Officers, Buyers & Auditors. |
 
 ---
 
