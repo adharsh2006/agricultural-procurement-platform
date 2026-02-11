@@ -32,7 +32,7 @@
     *   **Release:** Upon "Delivery Confirmation" (or Time Expiry), funds move *automatically* to the Farmer's wallet.
     *   **Safety:** Removing the "Trust" factor. No one can run away with the money.
 
-### 3. 🌌 Antigravity Store (IPFS Integration)
+### 3. 🌌 Content Hash (IPFS Integration)
 *   **Concept:** "Content-Addressable Storage" for Audit Trails.
 *   **Implementation:**
     *   **Digital Certificates:** Officer verification creates a JSON Manifest.
