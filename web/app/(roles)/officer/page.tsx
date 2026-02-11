@@ -1,23 +1,65 @@
 "use client";
-import { useState } from "react";
-import { ShieldCheck, FileCheck, Users, Activity, Lock, Key, Menu, Bell, CheckCircle } from "lucide-react";
+import { useState, useEffect } from "react";
+import { ShieldCheck, FileCheck, Users, Activity, Lock, Unlock, Key, Menu, Bell, CheckCircle } from "lucide-react";
+
+import VerificationModal from "../../../components/VerificationModal";
 
 export default function OfficerDashboard() {
     const [sidebarOpen, setSidebarOpen] = useState(true);
-    const [approvingId, setApprovingId] = useState<string | null>(null);
+    const [selectedItem, setSelectedItem] = useState<any>(null);
+    const [isVerifyModalOpen, setIsVerifyModalOpen] = useState(false);
 
-    const handleApprove = (id: string) => {
-        setApprovingId(id);
-        // Simulate Digital Signature Delay
-        setTimeout(() => {
-            alert(`Tender ${id} Approved! Digital Signature Appended on Blockchain.`);
-            setApprovingId(null);
-        }, 2000);
+    // --- MOCK DATA STATE ---
+    const [pendingItems, setPendingItems] = useState([
+        { id: "LST-2026-001", farmer: "Ramesh Kumar", crop: "Sharbati Wheat", qty: "Wait...", status: "PENDING" },
+        { id: "LST-2026-002", farmer: "Suresh Patel", crop: "Turmeric", qty: "50 Kg", status: "PENDING" }
+    ]);
+
+    const openVerifyModal = (item: any) => {
+        setSelectedItem(item);
+        setIsVerifyModalOpen(true);
     };
+
+    // --- POLLING FOR VOICE AI UPDATES (THE "MAGIC") ---
+    useEffect(() => {
+        const interval = setInterval(async () => {
+            try {
+                const res = await fetch('http://10.231.253.60:8001/farmer_state');
+                const data = await res.json();
+
+                // If the Voice AI says "PENDING_VERIFICATION", show it!
+                // We check if verified_qty > 0 to confirm data entry.
+                if (data.status === "PENDING_VERIFICATION" && data.verified_qty > 0) {
+                    setPendingItems(prev => prev.map(item =>
+                        item.id === "LST-2026-001" ? {
+                            ...item,
+                            qty: `${data.verified_qty} Kg`,
+                            status: "READY_TO_VERIFY",
+                            crop: "Wheat (Voice Entry)"
+                        } : item
+                    ));
+                }
+
+                // NEW: Handle Completed Verification
+                if (data.status === "BIDDING" || data.status === "MINTED") {
+                    setPendingItems(prev => prev.map(item =>
+                        item.id === "LST-2026-001" ? {
+                            ...item,
+                            qty: `${data.verified_qty} Kg`,
+                            status: "VERIFIED"
+                        } : item
+                    ));
+                }
+            } catch (e) {
+                // Silent fail for demo
+            }
+        }, 1000); // 1 Second Poll
+
+        return () => clearInterval(interval);
+    }, []);
 
     return (
         <div className="min-h-screen bg-slate-50 flex font-sans text-slate-900">
-
             {/* Sidebar (Desktop) */}
             <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 text-white transition-transform duration-300 ease-in-out ${sidebarOpen ? "translate-x-0" : "-translate-x-full"} md:relative md:translate-x-0`}>
                 <div className="h-full flex flex-col">
@@ -27,9 +69,8 @@ export default function OfficerDashboard() {
                     </div>
 
                     <nav className="flex-1 px-4 py-6 space-y-2">
-                        <NavLink icon={<FileCheck size={20} />} label="Pending Approvals" active />
-                        <NavLink icon={<Users size={20} />} label="Vendor Registry" />
-                        <NavLink icon={<Activity size={20} />} label="System Health" />
+                        <NavLink icon={<FileCheck size={20} />} label="Pending Verification" active />
+                        <NavLink icon={<Users size={20} />} label="Farmer Registry" />
                     </nav>
 
                     <div className="p-4 border-t border-slate-800">
@@ -50,18 +91,15 @@ export default function OfficerDashboard() {
                     <button className="md:hidden text-slate-600" onClick={() => setSidebarOpen(!sidebarOpen)}><Menu /></button>
                     <div className="flex items-center gap-2">
                         <span className="bg-indigo-100 text-indigo-800 text-xs font-bold px-2 py-1 rounded-full border border-indigo-200 flex items-center gap-1">
-                            <Key size={12} /> Admin Access Level 3
+                            <Key size={12} /> Notary Access Level
                         </span>
-                    </div>
-                    <div className="flex items-center gap-4">
-                        <Bell size={20} className="text-slate-500" />
                     </div>
                 </header>
 
                 <div className="p-6 md:p-8 overflow-y-auto">
                     <div className="mb-8">
-                        <h1 className="text-2xl font-bold text-slate-900">Pending Approvals</h1>
-                        <p className="text-slate-500">Decrypt Sealed Bids and Attach Digital Signatures for fund release.</p>
+                        <h1 className="text-2xl font-bold text-slate-900">Pending Verification</h1>
+                        <p className="text-slate-500">Physically verify produce and sign to open bidding.</p>
                     </div>
 
                     {/* Pending Actions Table */}
@@ -69,98 +107,69 @@ export default function OfficerDashboard() {
                         <table className="w-full text-sm text-left">
                             <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-100">
                                 <tr>
-                                    <th className="px-6 py-3">Reference ID</th>
-                                    <th className="px-6 py-3">Description</th>
-                                    <th className="px-6 py-3">Vendor</th>
-                                    <th className="px-6 py-3">Bid Value</th>
+                                    <th className="px-6 py-3">Listing ID</th>
+                                    <th className="px-6 py-3">Farmer</th>
+                                    <th className="px-6 py-3">Crop</th>
+                                    <th className="px-6 py-3">Expected Qty</th>
                                     <th className="px-6 py-3">Status</th>
-                                    <th className="px-6 py-3 text-right">Signature</th>
+                                    <th className="px-6 py-3 text-right">Action</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
-                                <Row
-                                    id="APR-2026-X82"
-                                    desc="Wheat Procurement - Bulk Order Grade A+"
-                                    vendor="Venkatesh Logistics"
-                                    value="₹ 22,50,000"
-                                    status="Pending Review"
-                                    loading={approvingId === "APR-2026-X82"}
-                                    onApprove={() => handleApprove("APR-2026-X82")}
-                                />
-                                <Row
-                                    id="APR-2026-X89"
-                                    desc="Emergency Onion Stock - Nashik Hub"
-                                    vendor="Global Exports Ltd"
-                                    value="₹ 5,40,000"
-                                    status="Sealed (Decrypting...)"
-                                    loading={false}
-                                    locked
-                                />
+                                {pendingItems.map((item) => (
+                                    <tr key={item.id} className={`hover:bg-slate-50/50 transition-colors ${item.status === "READY_TO_VERIFY" ? "bg-green-50/60" : ""}`}>
+                                        <td className="px-6 py-4 font-mono text-xs text-indigo-600 font-bold">{item.id}</td>
+                                        <td className="px-6 py-4 font-medium text-slate-900">{item.farmer}</td>
+                                        <td className="px-6 py-4 text-slate-600">{item.crop}</td>
+                                        <td className="px-6 py-4 font-bold text-slate-900">{item.qty}</td>
+                                        <td className="px-6 py-4">
+                                            {item.status === "VERIFIED" ? (
+                                                <span className="px-2.5 py-1 rounded-full text-xs font-bold border bg-green-100 text-green-700 border-green-200 flex items-center gap-1 w-fit">
+                                                    <CheckCircle size={12} /> Verified
+                                                </span>
+                                            ) : (
+                                                <span className="px-2.5 py-1 rounded-full text-xs font-medium border bg-amber-50 text-amber-700 border-amber-200 animate-pulse">
+                                                    Pending Verification
+                                                </span>
+                                            )}
+                                        </td>
+                                        <td className="px-6 py-4 text-right">
+                                            {item.status === "VERIFIED" ? (
+                                                <button disabled className="text-slate-400 text-xs font-medium cursor-not-allowed">
+                                                    Signed & Minted
+                                                </button>
+                                            ) : (
+                                                <button
+                                                    onClick={() => openVerifyModal(item)}
+                                                    className="bg-slate-900 hover:bg-slate-700 text-white px-4 py-2 rounded-lg text-xs font-bold transition-all shadow-sm flex items-center gap-2 ml-auto"
+                                                >
+                                                    <FileCheck size={12} /> Verify & Sign
+                                                </button>
+                                            )}
+                                        </td>
+                                    </tr>
+                                ))}
                             </tbody>
                         </table>
                     </div>
                 </div>
             </main>
+
+            {/* Modal Injection */}
+            {selectedItem && (
+                <VerificationModal
+                    isOpen={isVerifyModalOpen}
+                    onClose={() => setIsVerifyModalOpen(false)}
+                    listing={selectedItem}
+                />
+            )}
         </div>
     );
 }
 
 import SmartValidator from "../../../components/SmartValidator";
 
-function Row({ id, desc, vendor, value, status, loading, locked, onApprove }: any) {
-    const [isValidating, setIsValidating] = useState(false);
-    const [isReadyToSign, setIsReadyToSign] = useState(false);
 
-    const handleRunValidation = () => {
-        setIsValidating(true);
-    };
-
-    return (
-        <>
-            <tr className={`hover:bg-slate-50/50 ${isValidating ? "bg-slate-50" : ""}`}>
-                <td className="px-6 py-4 font-mono text-xs text-indigo-600 font-bold">{id}</td>
-                <td className="px-6 py-4 font-medium text-slate-900">{desc}</td>
-                <td className="px-6 py-4 text-slate-600">{vendor}</td>
-                <td className="px-6 py-4 font-bold text-slate-900">{value}</td>
-                <td className="px-6 py-4">
-                    <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${locked ? "bg-amber-50 text-amber-700 border-amber-200 animate-pulse" : isReadyToSign ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-blue-50 text-blue-700 border-blue-200"}`}>
-                        {locked ? status : isReadyToSign ? "Optimization Complete" : status}
-                    </span>
-                </td>
-                <td className="px-6 py-4 text-right">
-                    {locked ? (
-                        <button disabled className="text-slate-400 flex items-center gap-1 ml-auto text-xs font-bold cursor-not-allowed">
-                            <Lock size={12} /> Encrypted
-                        </button>
-                    ) : !isReadyToSign ? (
-                        <button
-                            onClick={handleRunValidation}
-                            disabled={isValidating}
-                            className="bg-slate-900 hover:bg-slate-700 text-white px-4 py-2 rounded-lg text-xs font-bold transition-all shadow-sm flex items-center gap-2 ml-auto"
-                        >
-                            {isValidating ? <Activity className="animate-spin" size={12} /> : <Activity size={12} />}
-                            {isValidating ? "Running Smart Checks..." : "Run Auto-Validation"}
-                        </button>
-                    ) : (
-                        <button
-                            onClick={onApprove}
-                            className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-xs font-bold transition-all shadow-md shadow-emerald-200 flex items-center gap-2 ml-auto animate-in zoom-in"
-                        >
-                            <Key size={12} /> Sign Approval
-                        </button>
-                    )}
-                </td>
-            </tr>
-            {isValidating && !isReadyToSign && (
-                <tr>
-                    <td colSpan={6} className="px-6 pb-6 pt-0 bg-slate-50 border-b border-slate-100">
-                        <SmartValidator onComplete={() => setIsReadyToSign(true)} />
-                    </td>
-                </tr>
-            )}
-        </>
-    );
-}
 
 function NavLink({ icon, label, active = false }: { icon: any, label: string, active?: boolean }) {
     return (

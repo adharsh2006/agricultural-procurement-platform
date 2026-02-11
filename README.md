@@ -1,127 +1,92 @@
-# ProcureChain: Enterprise Blockchain-AI Procurement Platform
+# AgriProcure: Decentralized Offline-First Procurement Ecosystem
 
-**ProcureChain** is a decentralized, transparent, and role-based procurement ecosystem designed for Government-to-Farmer (G2F) and B2B agricultural trade. It solves critical issues in traditional supply chains—bid rigging, delayed payments, and lack of transparency—by leveraging **Ethereum/Polygon Blockchain**, **AI-driven Price Discovery**, and **IoT Weight Verification**.
-
----
-
-## 🚀 Key Features
-
-### 1. 🛡️ Trustless Blockchain Infrastructure
-- **Smart Contracts (`AgriProcure.sol`)**: All tender logic, listing creation, and fund escrow are handled on-chain.
-- **Sealed Bid Reverse Auction**: Vendors submit encrypted bids. Prices are hidden until the deadline to prevent bid rigging and cartel formation.
-- **Immutable Audit Trail**: Every action (Listing, Bid, Approval, Payment) creates a tamper-proof hash on the ledger.
-
-### 2. 🧠 AI-Powered Fair Pricing & Outlier Detection
-- **Real-Time Price Discovery**: Integrates with **Gemini Pro** and **Agmarknet Data** to fetch live APMC / SmartTrade Market prices.
-- **Anomaly Detection**: Uses the **Isolation Forest Algorithm** (Scikit-Learn) to analyze bid patterns and flag suspicious outliers (e.g., predatory pricing or cartel behavior).
-- **Price Forecasting**: Predicts future price trends to help farmers decide *when* to sell.
-
-### 3. ⚖️ IoT & Quality Assurance
-- **IoT Weight Verification**: Farmers scan a QR code on a "Digital Scale". The weight is cryptographically signed and sent directly to the blockchain, eliminating manual data entry errors or weighing fraud.
-- **Quality Grading**: Automated grade mapping (Grade A+, A, B) determines the MSP (Minimum Support Price) logic in the Smart Contract.
-
-### 4. 🏛️ Role-Based Enterprise Architecture
-- **Farmer**: Voice-enabled listing, AI price insights, instant "Sell Produce" flow. Fully localized in **English, Hindi, Tamil, and Telugu**.
-- **Vendor**: Secure "Sealed Bid" interface, live "Reverse Auction" status (Blind).
-- **Officer**: "Smart Validation" desk that auto-checks deadlines, KYC, and Quality before allowing a **Digital Signature**.
-- **Auditor**: Forensic tools to verify Merkle Roots and hash integrity of any past transaction.
+**AgriProcure** is a blockchain-based agricultural procurement platform designed to bridge the digital divide. It connects offline farmers (via **USSD/GSM**) directly to government and private buyers, ensuring transparent pricing, immutable quality verification, and instant payments via **Smart Contracts**.
 
 ---
 
-## 🏗️ Technical Architecture
+## 🌾 The Core Problem & Solution
 
-### Frontend Layer (Next.js 14 + TypeScript)
-- **Framework**: Next.js (App Router) for Server-Side Rendering (SSR) and SEO.
-- **UI System**: Tailwind CSS + Lucide React for a "Government/Fintech" aesthetic (Slate/Blue palette).
-- **Localization**: Custom `LanguageContext` provider supporting dynamic switching between 4+ languages for all UI text.
-- **State**: React Hooks for managing complex multi-step modal flows (Bidding, Selling).
-- **Web3 Integration**: `Ethers.js` for communicating with the EVM (Ethereum Virtual Machine).
-
-### Intelligence Layer (Python FastAPI)
-- **API**: FastAPI providing high-performance endpoints (`/predict_price`, `/verify_qr`, `/detect_anomaly`).
-- **Machine Learning**: 
-  - **Isolation Forest**: Unsupervised learning model trained on historical bid data to detect anomalies.
-  - **Google Gemini**: LLM integration for contextual market analysis and multi-lingual voice support.
-- **Data Source**: Integrated `Agmarknet` CSV datasets for historical baseline training.
-
-### Blockchain Layer (Hardhat + Solidity)
-- **Contract**: `AgriProcure.sol` (ERC-compliant logic).
-- **Functions**: `listCrop()`, `placeBid()` (with modifier checks), `depositEscrow()`, `releasePayment()`.
-- **Events**: Emits indexed events for the "Timeline Tracker" to consume.
+*   **The Problem:** Small farmers in remote India lack internet access (4G/5G) and smartphones, excluding them from digital marketplaces. They depend on middlemen who exploit this lack of information.
+*   **The Solution:** A "Phygital" (Physical + Digital) bridge.
+    1.  **Offline Access:** Farmers use simple feature phones ("Dumb Phones") to list produce via **USSD (Unstructured Supplementary Service Data)**.
+    2.  **Trustless Trade:** All bids and payments are locked in **Blockchain Escrows** (Ethereum/Polygon).
+    3.  **Immutable Logic:** No human intervention in payment release; it’s automated by code.
 
 ---
 
-## 🛠️ Installation & Setup
+## 🚀 Key Features Built
 
-### Prerequisites
-- Node.js v18+
-- Python 3.9+
-- Metamask (or Hardhat Local Node)
+### 1. 📞 Multi-Language USSD Interface (Offline)
+*   **Technology:** GSM Standard Protocol (Works on Nokia 1100).
+*   **Features:**
+    *   **No Internet Required:** Works purely on telecom signaling.
+    *   **Vernacular Support:** Fully localized in **English, Tamil (தமிழ்), and Hindi (हिंदी)**.
+    *   **Native Scripting:** innovation that renders native unicode scripts on supported handsets.
+    *   **Action:** Farmers can Check Status, Deposit Crops, and View Wallet Balance by dialing a code.
 
-### 1. Clone Repository
+### 2. 🛡️ Blockchain Escrow & Smart Contracts
+*   **Contract:** `AgriProcure.sol`
+*   **Logic:**
+    *   **Deposit:** Officer verifies crop -> Mints "Batch Token" on chain.
+    *   **Escrow:** Buyer deposits funds -> Smart Contract locks encryption.
+    *   **Release:** Upon "Delivery Confirmation" (or Time Expiry), funds move *automatically* to the Farmer's wallet.
+    *   **Safety:** Removing the "Trust" factor. No one can run away with the money.
+
+### 3. 🌌 Antigravity Store (IPFS Integration)
+*   **Concept:** "Content-Addressable Storage" for Audit Trails.
+*   **Implementation:**
+    *   **Digital Certificates:** Officer verification creates a JSON Manifest.
+    *   **Proof of Delivery:** Logistics creates a signed delivery receipt.
+    *   **Immutability:** These documents are hashed (SHA-256) and stored on **IPFS**, generating a `CID` (Content ID) that is permanently linked to the Blockchain Transaction.
+    *   **Zero-Refresh UI:** The dashboard uses Optimistic UI updates to reflect these heavy operations instantly.
+
+### 4. 👮 Role-Based Dashboards (Web PWA)
+*   **Officer App:** For physical physical verification and digital signing.
+*   **Buyer/Vendor Portal:** For placing bids and confirming delivery.
+*   **Tech:** Next.js 14, Tailwind CSS, Framer Motion.
+
+---
+
+## 🏗️ System Architecture
+
+| Layer | Technology | Purpose |
+| :--- | :--- | :--- |
+| **Connectivity** | **USSD / GSM** | Connects offline farmers to the cloud via Telecom Gateways. |
+| **Backend Logic** | **Python (FastAPI)** | Handles USSD Session State, Language Translation, and IPFS Hashing. |
+| **Trust Layer** | **Hardhat / Solidity** | The Source of Truth. Holds funds and logic. |
+| **Storage** | **IPFS (InterPlanetary File System)** | Stores heavy documents (Images/PDFs) immutably. |
+| **Frontend** | **Next.js 14** | Responsive Web Interface for Officers & Buyers. |
+
+---
+
+## 🛠️ How to Run (Manual Setup)
+
+Running this system requires starting three separate services. Open 3 Terminal Windows:
+
+### Terminal 1: Backend (USSD & AI Logic)
+*Critical: Must run on Port 8001 for the Simulator to connect.*
 ```bash
-git clone https://github.com/yourusername/procurechain.git
-cd procurechain
+cd ai
+python -m uvicorn main:app --host 0.0.0.0 --port 8001
 ```
 
-### 2. Blockchain Setup (Hardhat)
+### Terminal 2: Frontend (Dashboards)
+*Runs on Port 3000.*
+```bash
+cd web
+npm run dev
+```
+
+### Terminal 3: Blockchain (Local Node)
+*Runs on Port 8545.*
 ```bash
 cd chain
-npm install
-npx hardhat node # Starts local blockchain on port 8545
-# Deploy Contracts
-npx hardhat run scripts/deploy.js --network localhost
-```
-
-### 3. AI Backend Setup (FastAPI)
-```bash
-cd ../ai
-pip install -r requirements.txt
-# Requires .env file with GOOGLE_API_KEY
-uvicorn main:app --reload --port 8001
-```
-
-### 4. Frontend Client (Next.js)
-```bash
-cd ../web
-npm install
-npm run dev
-# App runs at http://localhost:3000
+npx hardhat node
 ```
 
 ---
 
-## 📖 How It Works (End-to-End Flow)
-
-1.  **Farmer Lists Produce**:
-    -   Farmer logs in, speaks "I want to sell Wheat".
-    -   AI parses intent. IoT QR code is scanned.
-    -   Smart Contract creates a `LISTING` on blockchain.
-
-2.  **Vendor Bids (Blind)**:
-    -   Vendors see the tender.
-    -   They submit a **Sealed Bid**. The specific amount is hashed.
-    -   AI Backend checks the bid against the `Anomaly Model`. If it varies >15% from market norm, it is flagged.
-
-3.  **Officer Approves**:
-    -   Officer views the "Pending" list.
-    -   **Smart Validator** engine runs: Checks Deadline 🕒, L1 Logic 📉, and Quality 🏅.
-    -   Officer attaches **Digital Signature** to release the Work Order.
-
-4.  **Payment & Audit**:
-    -   Upon delivery, funds in Escrow are released via Smart Contract.
-    -   **Auditor** sees the immutable log. Can use the "Forensic Verifier" to mathematically prove the transaction occurred and was signed by the specific Officer.
-
----
-
-## 🛡️ Security Measures
-- **Re-Entrancy Guards**: Applied to all payment functions in Solidity.
-- **Role-Based Access Control (RBAC)**: `Ownable` and custom modifiers ensure Vendors cannot approve their own bids.
-- **Data Privacy**: Vendor bids remain encrypted (Blind) until the Tender Deadline expires.
-
----
-
-## 🔮 Future Roadmap
-- **Zero-Knowledge Proofs (ZK-Snarks)**: For verifying vendor solvency without revealing balance.
-- **Supply Chain Twin**: GIS integration for live truck tracking.
-- **DAO Governance**: Voting mechanism for Minimum Support Price (MSP) adjustments.
+## 🔮 Future Roadmap (Antigravity)
+*   **ZKP (Zero-Knowledge Proofs):** Verify farmer land ownership without revealing personal identity.
+*   **IoT Integration:** Direct weight scale integration via Bluetooth to the USSD session.
+*   **DeFi Lending:** Use "Committed Crop" tokens as collateral for micro-loans.

@@ -13,7 +13,7 @@ interface Listing {
     commodity: string;
     quantity: string;
     minPrice: number;
-    status: "Active" | "Action Required" | "Sold" | "Delivered";
+    status: "PENDING" | "OFFICER_VERIFIED" | "LOCKED_IN_ESCROW" | "COMPLETED";
     highestBid?: Bid;
     bidsCount: number;
     date: string;
@@ -21,30 +21,30 @@ interface Listing {
 
 const MOCK_LISTINGS: Listing[] = [
     {
+        id: "TDR-2026-005",
+        commodity: "Soybean",
+        quantity: "200 Kg",
+        minPrice: 3500,
+        status: "PENDING", // Initial state
+        bidsCount: 0,
+        date: "Just Now"
+    },
+    {
         id: "TDR-2026-001",
         commodity: "Sharbati Wheat",
         quantity: "100 Kg",
         minPrice: 2200,
-        status: "Action Required",
+        status: "OFFICER_VERIFIED", // Ready for bidding
         highestBid: { bidder: "ITC Agrotech", amount: 2350, time: "2 mins ago" },
         bidsCount: 3,
         date: "Today, 10:30 AM"
-    },
-    {
-        id: "TDR-2026-002",
-        commodity: "Turmeric (Raw)",
-        quantity: "50 Kg",
-        minPrice: 6500,
-        status: "Active",
-        bidsCount: 0,
-        date: "Yesterday"
     },
     {
         id: "TDR-2025-892",
         commodity: "Basmati Rice",
         quantity: "500 Kg",
         minPrice: 4000,
-        status: "Sold",
+        status: "LOCKED_IN_ESCROW", // Funds locked
         highestBid: { bidder: "BigBasket Sourcing", amount: 4100, time: "2 days ago" },
         bidsCount: 5,
         date: "Feb 1, 2026"
@@ -56,15 +56,8 @@ export default function FarmerListings() {
     const [listings, setListings] = useState<Listing[]>(MOCK_LISTINGS);
     const [approving, setApproving] = useState<string | null>(null);
 
-    const handleApprove = (id: string, bidder: string) => {
-        setApproving(id);
-        // Simulate Blockchain Transaction
-        setTimeout(() => {
-            alert(`Bid from ${bidder} Approved! Smart Contract Escrow Initiated.`);
-            setListings(prev => prev.map(l => l.id === id ? { ...l, status: "Sold" } : l));
-            setApproving(null);
-        }, 2000);
-    };
+    // Removed handleApprove as it's not part of P2P flow (Automatic/Buyer driven)
+    const handleAction = () => { };
 
     return (
         <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden animate-in fade-in duration-700">
@@ -112,27 +105,22 @@ export default function FarmerListings() {
                                     <StatusBadge status={item.status} />
                                 </td>
                                 <td className="px-6 py-4 text-right">
-                                    {item.status === 'Action Required' && (
-                                        <button
-                                            onClick={() => handleApprove(item.id, item.highestBid?.bidder || "")}
-                                            disabled={!!approving}
-                                            className="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-md text-xs font-bold transition-colors shadow-sm flex items-center gap-1 ml-auto"
-                                        >
-                                            {approving === item.id ? (
-                                                <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                            ) : <Check size={14} />}
-                                            Accept Bid
-                                        </button>
+                                    {item.status === 'PENDING' && (
+                                        <span className="text-slate-400 text-xs italic">Waiting for Officer...</span>
                                     )}
-                                    {item.status === 'Sold' && (
-                                        <button className="bg-slate-900 hover:bg-slate-800 text-white px-3 py-1.5 rounded-md text-xs font-bold transition-colors shadow-sm flex items-center gap-1 ml-auto">
-                                            <Truck size={14} /> Deliver
-                                        </button>
+                                    {item.status === 'OFFICER_VERIFIED' && (
+                                        <span className="text-blue-500 text-xs font-bold">Bidding Live</span>
                                     )}
-                                    {item.status === 'Active' && (
-                                        <button className="text-slate-400 hover:text-slate-600 p-1">
-                                            <MoreHorizontal size={18} />
-                                        </button>
+                                    {item.status === 'LOCKED_IN_ESCROW' && (
+                                        <span className="text-purple-500 text-xs font-bold flex items-center gap-1">
+                                            <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse" />
+                                            Funds Locked
+                                        </span>
+                                    )}
+                                    {item.status === 'COMPLETED' && (
+                                        <span className="text-green-600 text-xs font-bold flex items-center gap-1">
+                                            <Check size={14} /> Paid
+                                        </span>
                                     )}
                                 </td>
                             </tr>
@@ -146,10 +134,10 @@ export default function FarmerListings() {
 
 function StatusBadge({ status }: { status: string }) {
     const styles = {
-        "Active": "bg-blue-50 text-blue-700 border-blue-200",
-        "Action Required": "bg-amber-50 text-amber-700 border-amber-200 animate-pulse",
-        "Sold": "bg-purple-50 text-purple-700 border-purple-200",
-        "Delivered": "bg-green-50 text-green-700 border-green-200"
+        "PENDING": "bg-slate-100 text-slate-600 border-slate-200",
+        "OFFICER_VERIFIED": "bg-blue-50 text-blue-700 border-blue-200 animate-pulse",
+        "LOCKED_IN_ESCROW": "bg-purple-50 text-purple-700 border-purple-200",
+        "COMPLETED": "bg-green-50 text-green-700 border-green-200"
     };
     return (
         <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${styles[status as keyof typeof styles] || "bg-slate-100 text-slate-600"}`}>

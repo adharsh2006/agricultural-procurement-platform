@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
-import { X, Gavel, ShieldCheck, Lock, AlertTriangle } from "lucide-react";
+import { X, DollarSign, ShieldCheck, Lock } from "lucide-react";
+import SmartValidator from "./SmartValidator";
 
 interface BidModalProps {
     isOpen: boolean;
@@ -12,103 +13,111 @@ interface BidModalProps {
 
 export default function BidModal({ isOpen, onClose, tenderId, currentL1, commodity }: BidModalProps) {
     const [bidAmount, setBidAmount] = useState<string>("");
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [success, setSuccess] = useState(false);
+    const [step, setStep] = useState(0); // 0: Form, 1: Validation, 2: Success
+
+    const handlePlaceBid = () => {
+        setStep(1);
+    };
+
+    const handleValidationComplete = async () => {
+        // Simulate API call to place bid after validation
+        setTimeout(async () => {
+            // SYNC WITH MOBILE SIMULATOR
+            try {
+                await fetch('http://10.231.253.60:8001/update_farmer_state', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        farmer_id: "FARMER_RK_001",
+                        status: "BIDDING_OPEN"
+                    })
+                });
+            } catch (e) {
+                console.warn("Mobile Simulator Sync Failed", e);
+            }
+            setStep(2);
+        }, 500);
+    };
 
     if (!isOpen) return null;
 
-    const handleSubmit = async () => {
-        setIsSubmitting(true);
-        // Simulate Blockchain Transaction
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        setIsSubmitting(false);
-        setSuccess(true);
-    };
-
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in">
-            <div className="bg-white rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl relative">
-
-                {/* Close Button */}
-                <button onClick={onClose} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors">
-                    <X size={24} />
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 animate-in fade-in">
+            <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 relative">
+                <button
+                    onClick={onClose}
+                    className="absolute top-4 right-4 text-slate-400 hover:text-slate-600"
+                >
+                    <X size={20} />
                 </button>
 
-                {!success ? (
-                    <>
-                        <div className="bg-slate-50 border-b border-slate-100 p-6">
-                            <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-                                <Gavel className="text-blue-600" />
-                                Place Secure Bid
-                            </h2>
-                            <p className="text-slate-500 text-sm mt-1">
-                                Tender: <span className="font-mono font-medium text-slate-700">{tenderId}</span> • {commodity}
-                            </p>
+                <h2 className="text-xl font-bold text-slate-800 mb-2">Place Bid</h2>
+                <div className="text-sm text-slate-500 mb-6">
+                    For <span className="font-semibold text-slate-900">{commodity}</span> (ID: {tenderId})
+                </div>
+
+                {step === 0 && (
+                    <div className="space-y-4">
+                        <div className="bg-blue-50 p-4 rounded-lg flex items-start gap-3">
+                            <ShieldCheck className="text-blue-600 shrink-0" size={20} />
+                            <div className="text-sm text-blue-800">
+                                <strong>Secure Escrow:</strong> Your funds will be locked in the smart contract until delivery is confirmed.
+                            </div>
                         </div>
 
-                        <div className="p-6 space-y-6">
-
-                            {/* Sealed Bid Notice */}
-                            <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 flex items-start gap-3">
-                                <Lock className="text-slate-400 mt-1" size={20} />
-                                <div>
-                                    <h4 className="text-sm font-bold text-slate-900">Blind Sealed Bid</h4>
-                                    <p className="text-xs text-slate-500">
-                                        You are submitting a closed envelope bid. Competitor prices are hidden.
-                                        Winner is revealed only after deadline.
-                                    </p>
-                                </div>
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">Your Bid Amount (₹)</label>
+                            <div className="relative">
+                                <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                                <input
+                                    type="number"
+                                    value={bidAmount}
+                                    onChange={(e) => setBidAmount(e.target.value)}
+                                    className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    placeholder={`Min Bid: ${currentL1}`}
+                                />
                             </div>
-
-                            {/* Input Field */}
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-2">
-                                    Your Bid Amount (₹ / MT)
-                                </label>
-                                <div className="relative">
-                                    <span className="absolute left-4 top-3.5 text-slate-400 font-bold">₹</span>
-                                    <input
-                                        type="number"
-                                        value={bidAmount}
-                                        onChange={(e) => setBidAmount(e.target.value)}
-                                        className="w-full pl-10 pr-4 py-3 border-2 border-slate-200 rounded-xl focus:border-blue-500 focus:ring-0 text-lg font-bold text-slate-900 transition-all placeholder:font-normal placeholder:text-slate-300"
-                                        placeholder="Enter your best offer..."
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Encryption Notice */}
-                            <div className="flex items-center gap-2 text-xs text-slate-500 bg-slate-50 p-3 rounded-lg">
-                                <Lock size={12} />
-                                <span>Bid amount will be <strong>hashed & encrypted</strong> before submitting to blockchain.</span>
-                            </div>
-
-                            <button
-                                onClick={handleSubmit}
-                                disabled={!bidAmount || isSubmitting}
-                                className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-900/10 flex items-center justify-center gap-2 text-lg transition-all"
-                            >
-                                {isSubmitting ? (
-                                    <>Processing <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /></>
-                                ) : (
-                                    "Confirm & Sign Bid"
-                                )}
-                            </button>
                         </div>
-                    </>
-                ) : (
-                    <div className="p-12 text-center">
-                        <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center text-green-600 mx-auto mb-6 animate-in zoom-in spin-in-180 duration-500">
-                            <ShieldCheck size={40} />
-                        </div>
-                        <h3 className="text-2xl font-bold text-slate-900 mb-2">Bid Submitted!</h3>
-                        <p className="text-slate-500 mb-8">
-                            Transaction Hash: <span className="font-mono bg-slate-100 px-1 rounded text-slate-700">0x8f2...9a1</span>
-                            <br />
-                            Your bid is now recorded on the immutable ledger.
+
+                        <button
+                            onClick={handlePlaceBid}
+                            className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 rounded-lg transition-colors shadow-lg shadow-blue-900/20"
+                        >
+                            Verify & Place Bid
+                        </button>
+                    </div>
+                )}
+
+                {step === 1 && (
+                    <div className="space-y-4">
+                        <p className="text-sm text-slate-500 mb-4">
+                            Verifying Financial Capacity & History...
                         </p>
-                        <button onClick={onClose} className="w-full bg-slate-900 text-white font-bold py-3 rounded-xl">
-                            Return to Dashboard
+                        <SmartValidator
+                            onComplete={handleValidationComplete}
+                            title="FINANCIAL AUDIT ENGINE"
+                            steps={[
+                                { id: "1", label: "Checking Bank Solvency...", status: "pending" },
+                                { id: "2", label: "Verifying Tax Compliance...", status: "pending" },
+                                { id: "3", label: "Checking Credit Score...", status: "pending" }
+                            ]}
+                        />
+                    </div>
+                )}
+
+                {step === 2 && (
+                    <div className="text-center py-8 animate-in fade-in zoom-in duration-300">
+                        <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <ShieldCheck size={32} />
+                        </div>
+                        <h3 className="text-lg font-bold text-slate-800">Bid Placed Successfully!</h3>
+                        <p className="text-sm text-slate-500 mb-6">Your bid is now recorded on-chain.</p>
+
+                        <button
+                            onClick={onClose}
+                            className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-2 rounded-lg"
+                        >
+                            Close
                         </button>
                     </div>
                 )}

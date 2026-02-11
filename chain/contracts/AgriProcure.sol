@@ -1,20 +1,21 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract AgriProcure is Ownable {
+
+contract AgriProcure {
     
-    enum Status { LISTED, BIDDING_OPEN, LOCKED_IN_ESCROW, DELIVERED, PAYMENT_RELEASED, DISPUTED }
-    enum Grade { A_PLUS, A, B, C } 
+    // REFACTORED STATUS for Real-World Workflow
+    enum Status { PENDING, MINTED, BIDDING, ACCEPTED, ESCROWED, RELEASED, DISPUTED }
+    enum Grade { A_PLUS, A, B, C }
 
     struct CropListing {
         uint id;
         address farmer;
         string cropName; 
-        uint quantity;  // In Quintals
-        Grade quality;  // Verified by "IoT"
-        uint msp;       // Base MSP
+        uint quantity;  // In Quintals (Verified by Officer)
+        Grade quality;  // Verified by Officer
+        uint minPrice;  // Set by Farmer
         uint highestBid;
         address highestBidder;
         Status status;
@@ -25,28 +26,28 @@ contract AgriProcure is Ownable {
     uint public listingCount;
     mapping(uint => CropListing) public listings;
     
-    // Govt MSP Configuration (Base Price for Grade A)
-    mapping(string => uint) public governmentMSP;
+    address public officer; // Single officer for simplicity (or use RBAC)
 
     mapping(address => uint) public farmerReputation;
     mapping(address => uint) public buyerReputation;
 
-    event CropListed(uint indexed id, address indexed farmer, string crop, Grade grade);
+    event CropListed(uint indexed id, address indexed farmer, string crop);
+    event ProduceVerified(uint indexed id, address indexed officer, uint quantity, Grade grade);
     event NewBid(uint indexed id, address indexed bidder, uint amount);
     event EscrowLocked(uint indexed id, address indexed bidder, uint amount);
     event PaymentReleased(uint indexed id, address indexed farmer, uint amount);
 
-    constructor() Ownable(msg.sender) {}
+    constructor() {
+        officer = msg.sender; // Deployer is Officer for demo
+    }
 
-    // --- Govt Functions ---
-    function setMSP(string memory _crop, uint _pricePerQuintal) external onlyOwner {
-        governmentMSP[_crop] = _pricePerQuintal;
+    modifier onlyOfficer() {
+        require(msg.sender == officer, "Only Officer");
+        _;
     }
 
     // --- Farmer Functions ---
-    function listCrop(string memory _crop, uint _quantity, Grade _grade, string memory _audioHash) external {
-        uint baseMsp = governmentMSP[_crop];
-        // Ensure Farmer has reputation or basic check
+    function listCrop(string memory _crop, uint _expectedQuantity, uint _minPrice) external {
         if(farmerReputation[msg.sender] == 0) farmerReputation[msg.sender] = 50; 
 
         listingCount++;
@@ -54,35 +55,52 @@ contract AgriProcure is Ownable {
             id: listingCount,
             farmer: msg.sender,
             cropName: _crop,
-            quantity: _quantity,
-            quality: _grade,
-            msp: baseMsp, 
+            quantity: _expectedQuantity, // Tentative until verified
+            quality: Grade.B, // Default until verified
+            minPrice: _minPrice,
             highestBid: 0,
             highestBidder: address(0),
-            status: Status.BIDDING_OPEN,
+            status: Status.PENDING,
             escrowAmount: 0,
             paymentReleased: false
         });
 
-        emit CropListed(listingCount, msg.sender, _crop, _grade);
+        emit CropListed(listingCount, msg.sender, _crop);
+    }
+
+    // --- Officer Functions ---
+    function verifyProduce(uint _listingId, uint _verifiedQuantity, Grade _grade) external onlyOfficer {
+        CropListing storage item = listings[_listingId];
+        require(item.status == Status.PENDING, "Already Verified or Invalid Status");
+
+        item.quantity = _verifiedQuantity;
+        item.quality = _grade;
+        // STATUS TRANSITION: MINTED (Digital Twin Created) -> BIDDING (Open for Market)
+        item.status = Status.MINTED; 
+        item.status = Status.BIDDING; 
+
+        emit ProduceVerified(_listingId, msg.sender, _verifiedQuantity, _grade);
+    }
+
+    // --- Farmer Functions (continued) ---
+    function acceptBid(uint _listingId) external {
+        CropListing storage item = listings[_listingId];
+        require(msg.sender == item.farmer, "Only Farmer");
+        require(item.status == Status.BIDDING, "Not in Bidding Phase");
+        require(item.highestBid > 0, "No Bids to Accept");
+
+        item.status = Status.ACCEPTED;
+        // Emit event if needed
     }
 
     // --- Buyer Functions ---
     function placeBid(uint _listingId, uint _bidPerQuintal) external {
         CropListing storage item = listings[_listingId];
-        require(item.status == Status.BIDDING_OPEN, "Bidding Closed");
+        require(item.status == Status.BIDDING, "Bidding Closed");
         
-        // Quality Logic:
-        // Grade A+ (0) : 110% of MSP
-        // Grade A (1): 100% of MSP
-        // Grade B (2): 90% of MSP
-        // Grade C (3): 80% of MSP
-        uint effectiveMSP = item.msp;
-        if(item.quality == Grade.A_PLUS) effectiveMSP = (item.msp * 110) / 100;
-        if(item.quality == Grade.B) effectiveMSP = (item.msp * 90) / 100;
-        if(item.quality == Grade.C) effectiveMSP = (item.msp * 80) / 100;
-
-        require(_bidPerQuintal >= effectiveMSP, "Bid Below Quality Adjusted MSP!");
+        // Encryption Simulation: In real ZKP, this would be a hash. 
+        // Here we keep it public for the demo but UI shows "Sealed".
+        require(_bidPerQuintal >= item.minPrice, "Bid Below Asking Price!");
         require(_bidPerQuintal > item.highestBid, "Bid too low");
 
         item.highestBid = _bidPerQuintal;
@@ -94,22 +112,25 @@ contract AgriProcure is Ownable {
     function depositEscrow(uint _listingId) external payable {
         CropListing storage item = listings[_listingId];
         require(msg.sender == item.highestBidder, "Not highest bidder");
+        // Update: Must be ACCEPTED by Farmer first
+        require(item.status == Status.ACCEPTED, "Bid not accepted by Farmer yet");
         require(msg.value == (item.highestBid * item.quantity), "Incorrect Amount"); 
         
         item.escrowAmount = msg.value;
-        item.status = Status.LOCKED_IN_ESCROW;
+        item.status = Status.ESCROWED;
         
         emit EscrowLocked(_listingId, msg.sender, msg.value);
     }
-    
-    function confirmDeliveryAndReleasePayment(uint _listingId) external {
+
+    // Called by BUYER to confirm receipt and release funds
+    function confirmDelivery(uint _listingId) external {
         CropListing storage item = listings[_listingId];
-        require(msg.sender == item.highestBidder || msg.sender == owner(), "Buyer/Admin Only");
-        require(item.status == Status.LOCKED_IN_ESCROW, "No funds in Escrow");
+        require(msg.sender == item.highestBidder, "Only Buyer can confirm delivery");
+        require(item.status == Status.ESCROWED, "No funds in Escrow");
 
         uint amount = item.escrowAmount;
         item.escrowAmount = 0;
-        item.status = Status.PAYMENT_RELEASED;
+        item.status = Status.RELEASED;
         item.paymentReleased = true;
 
         farmerReputation[item.farmer] += 5;

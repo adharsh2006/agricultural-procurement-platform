@@ -8,13 +8,20 @@ interface Step {
     status: "pending" | "running" | "success" | "failed";
 }
 
-export default function SmartValidator({ onComplete }: { onComplete: () => void }) {
-    const [steps, setSteps] = useState<Step[]>([
-        { id: "1", label: "Verifying Tender Deadline Expiry...", status: "pending" },
-        { id: "2", label: "Checking Bidder Eligibility (KYC)...", status: "pending" },
-        { id: "3", label: "Comparing Bids (Reverse Auction Logic)...", status: "pending" },
-        { id: "4", label: "Validating Grade A+ Quality Certs...", status: "pending" },
-    ]);
+interface SmartValidatorProps {
+    onComplete: () => void;
+    steps?: Step[]; // Optional custom steps
+    title?: string;
+}
+
+const DEFAULT_STEPS: Step[] = [
+    { id: "1", label: "Checking Submission Deadline...", status: "pending" },
+    { id: "2", label: "Verifying H1 (Highest Bidder) Status...", status: "pending" },
+    { id: "3", label: "Analyzing Quality Grade (A+)...", status: "pending" },
+];
+
+export default function SmartValidator({ onComplete, steps: customSteps, title = "SMART CONTRACT AUTOMATION ENGINE v3.1" }: SmartValidatorProps) {
+    const [steps, setSteps] = useState<Step[]>(customSteps || DEFAULT_STEPS);
 
     useEffect(() => {
         let currentStep = 0;
@@ -27,21 +34,23 @@ export default function SmartValidator({ onComplete }: { onComplete: () => void 
             }
 
             setSteps(prev => prev.map((s, idx) => {
+                // Mark current as running
                 if (idx === currentStep) return { ...s, status: "running" };
-                if (idx === currentStep - 1) return { ...s, status: "success" };
+                // Mark previous as clean success (if any)
+                if (idx < currentStep) return { ...s, status: "success" };
                 return s;
             }));
 
-            // Finish step after delay
+            // Simulate "Work" finishing
             setTimeout(() => {
                 setSteps(prev => prev.map((s, idx) => {
                     if (idx === currentStep) return { ...s, status: "success" };
                     return s;
                 }));
                 currentStep++;
-            }, 800);
+            }, 1000);
 
-        }, 1200);
+        }, 1500);
 
         return () => clearInterval(interval);
     }, []);
@@ -49,7 +58,7 @@ export default function SmartValidator({ onComplete }: { onComplete: () => void 
     return (
         <div className="bg-slate-900 text-slate-200 p-4 rounded-lg font-mono text-xs border border-slate-700 shadow-inner">
             <div className="flex items-center gap-2 mb-3 text-emerald-400 font-bold border-b border-slate-700 pb-2">
-                <Terminal size={14} /> SMART CONTRACT AUTOMATION ENGINE v3.1
+                <Terminal size={14} /> {title}
             </div>
             <div className="space-y-2">
                 {steps.map((step) => (

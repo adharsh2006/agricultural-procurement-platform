@@ -12,28 +12,23 @@ dist/
 # Hardhat
 artifacts/
 cache/
-typechain-types/
+network.json
 
-# Environment Variables (Security)
+# Environment Variables
 .env
 .env.local
 
-# IDEs
+# Logs and Temp Files
+*.log
+deploy_log.txt
+deploy_error.txt
+tunnel_url.txt
+ai_log.txt
+
+# Local Storage Simulation
+ipfs_storage/*
+!ipfs_storage/.gitkeep
+
+# IDE
 .vscode/
 .idea/
-*.swp
-*.swo
-
-# System
-thumbs.db
-.DS_Store
-
-# Logs
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# AI Models (Large files)
-*.pth
-*.pt
-*.h5

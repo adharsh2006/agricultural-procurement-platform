@@ -3,11 +3,13 @@ import { useState } from "react";
 import { BarChart3, Search, FileText, CheckCircle, AlertTriangle, ShieldCheck, Menu, Download } from "lucide-react";
 
 import LiveProcurementTracker from "../../../components/LiveProcurementTracker";
+import BidLogViewer from "../../../components/BidLogViewer";
 
 export default function AuditorDashboard() {
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [searchHash, setSearchHash] = useState("");
     const [verificationResult, setVerificationResult] = useState<any>(null);
+    const [selectedTender, setSelectedTender] = useState<string | null>(null);
 
     const validHash = "0x892a99b2"; // Demo Hash
 
@@ -79,6 +81,42 @@ export default function AuditorDashboard() {
                     <div className="mb-8">
                         <h1 className="text-2xl font-bold text-slate-900">Blockchain Audit Trail</h1>
                         <p className="text-slate-500">Real-time listing of all hashed transactions. Verify immutability below.</p>
+                    </div>
+
+                    {/* NEW: Tender Audit Section */}
+                    <div className="mb-8">
+                        <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                            <FileText size={20} className="text-slate-500" /> Select Tender to Audit
+                        </h3>
+
+                        {!selectedTender ? (
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                {[
+                                    { id: "T-1024", title: "Wheat Procurement (Punjab)", bids: 12, status: "Open" },
+                                    { id: "T-1025", title: "Basmati Rice (Haryana)", bids: 8, status: "Locked" },
+                                    { id: "T-1026", title: "Cotton Bundle (Gujarat)", bids: 15, status: "Review" },
+                                ].map((tender) => (
+                                    <div
+                                        key={tender.id}
+                                        onClick={() => setSelectedTender(tender.id)}
+                                        className="bg-white border border-slate-200 rounded-xl p-5 hover:shadow-md cursor-pointer transition-all hover:border-blue-400 group"
+                                    >
+                                        <div className="flex justify-between items-start mb-2">
+                                            <span className="font-mono text-xs font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded">{tender.id}</span>
+                                            <span className={`text-[10px] font-bold px-2 py-1 rounded-full uppercase ${tender.status === 'Open' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600'}`}>
+                                                {tender.status}
+                                            </span>
+                                        </div>
+                                        <h4 className="font-bold text-slate-800 group-hover:text-blue-700 transition-colors">{tender.title}</h4>
+                                        <div className="mt-3 flex items-center gap-4 text-xs text-slate-500">
+                                            <span className="flex items-center gap-1"><ShieldCheck size={12} /> {tender.bids} Bids (Encrypted)</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <BidLogViewer tenderId={selectedTender} onClose={() => setSelectedTender(null)} />
+                        )}
                     </div>
 
                     {/* Tracker Section */}

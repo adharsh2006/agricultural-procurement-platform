@@ -1,135 +1,139 @@
 "use client";
-import { useState } from "react";
-import { Mic, Leaf, TrendingUp, History, Settings, LogOut, Bell, ShieldCheck, Menu } from "lucide-react";
-import FarmerWidgets from "../../../components/FarmerWidgets";
-import FarmerListings from "../../../components/FarmerListings";
+import { useState, useEffect } from "react";
+import { Mic, Plus, Gavel, Wallet, Bell, ShieldCheck, Menu, LogOut } from "lucide-react";
 import SellModal from "../../../components/SellModal";
 import { useLanguage } from "../../../context/LanguageContext";
 
 export default function FarmerDashboard() {
     const { speak } = useLanguage();
     const [isSellModalOpen, setIsSellModalOpen] = useState(false);
-    const [sidebarOpen, setSidebarOpen] = useState(true);
+
+    // --- POLLING STATE ---
+    const [farmerState, setFarmerState] = useState<any>({
+        verified_qty: 0,
+        crop: "Wheat",
+        status: "NO_ACTION"
+    });
+
+    // Mock Data for "Active Bids" and "Waiting for Payment"
+    const activeBidsCount = 2;
+    const paymentPendingAmount = "₹ 45,000";
+
+    // --- POLL BACKEND ---
+    useEffect(() => {
+        const interval = setInterval(async () => {
+            try {
+                const res = await fetch('http://10.231.253.60:8001/farmer_state');
+                const data = await res.json();
+                setFarmerState(data);
+            } catch (e) { }
+        }, 1000);
+        return () => clearInterval(interval);
+    }, []);
 
     return (
-        <div className="min-h-screen bg-slate-50 flex font-sans text-slate-900">
+        <div className="min-h-screen bg-slate-50 font-sans text-slate-900 pb-20">
 
-            {/* Sidebar (Desktop) */}
-            <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 text-white transition-transform duration-300 ease-in-out ${sidebarOpen ? "translate-x-0" : "-translate-x-full"} md:relative md:translate-x-0`}>
-                <div className="h-full flex flex-col">
-                    {/* Brand */}
-                    <div className="h-16 flex items-center px-6 border-b border-slate-800">
-                        <ShieldCheck className="text-blue-400 mr-2" />
-                        <span className="font-bold text-lg tracking-wide">ProcureChain</span>
-                    </div>
-
-                    {/* Nav */}
-                    <nav className="flex-1 px-4 py-6 space-y-2">
-                        <NavLink icon={<Leaf size={20} />} label="Overview" active />
-                        <NavLink icon={<TrendingUp size={20} />} label="My Listings" />
-                        <NavLink icon={<History size={20} />} label="Transaction History" />
-                        <div className="pt-4 pb-2">
-                            <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider px-2">Settings</div>
-                        </div>
-                        <NavLink icon={<Settings size={20} />} label="Profile & KYC" />
-                    </nav>
-
-                    {/* User Profile */}
-                    <div className="p-4 border-t border-slate-800">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center font-bold">RK</div>
-                            <div>
-                                <div className="text-sm font-medium">Ramesh Kumar</div>
-                                <div className="text-xs text-slate-400">Verified Farmer</div>
-                            </div>
-                            <LogOut size={16} className="ml-auto text-slate-500 hover:text-white cursor-pointer" />
-                        </div>
-                    </div>
-                </div>
-            </aside>
-
-            {/* Main Content */}
-            <main className="flex-1 flex flex-col min-h-screen">
-
-                {/* Topbar */}
-                <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 sticky top-0 z-40">
-                    <button className="md:hidden text-slate-600" onClick={() => setSidebarOpen(!sidebarOpen)}>
-                        <Menu />
-                    </button>
-
+            {/* 1. Header & Notification Bar */}
+            <header className="bg-white shadow-sm sticky top-0 z-40">
+                <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
                     <div className="flex items-center gap-2">
-                        <span className="bg-emerald-100 text-emerald-800 text-xs font-bold px-2 py-1 rounded-full border border-emerald-200 flex items-center gap-1">
-                            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                            Live Market Connection
-                        </span>
+                        <ShieldCheck className="text-green-600" size={24} />
+                        <span className="font-bold text-lg text-slate-800">AgriProcure</span>
                     </div>
-
-                    <div className="flex items-center gap-4">
-                        <button className="relative p-2 text-slate-500 hover:bg-slate-100 rounded-full">
-                            <Bell size={20} />
-                            <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
-                        </button>
-                        <div className="text-right hidden sm:block">
-                            <div className="text-xs text-slate-500">Wallet Balance</div>
-                            <div className="font-bold font-mono text-slate-900">₹ 42,500.00</div>
-                        </div>
+                    <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm">RK</div>
+                        <LogOut size={20} className="text-slate-400" />
                     </div>
-                </header>
-
-                {/* Dashboard Content */}
-                <div className="flex-1 p-6 md:p-8 overflow-y-auto">
-
-                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-                        <div>
-                            <h1 className="text-2xl font-bold text-slate-900">Dashboard</h1>
-                            <p className="text-slate-500">Welcome back, Ramesh. Here is today's market update.</p>
-                        </div>
-
-                        <button
-                            onClick={() => setIsSellModalOpen(true)}
-                            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-bold shadow-lg shadow-blue-900/10 flex items-center gap-2 transition-all"
-                        >
-                            <Mic size={20} /> Sell Produce via Voice
-                        </button>
-                    </div>
-
-                    {/* Stats Grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                        <StatCard label="Active Listings" value="3" subtext="2 Pending Approval" />
-                        <StatCard label="Total Sales (Fy26)" value="₹ 8.5 Lakh" subtext="+12% vs last year" />
-                        <StatCard label="Reputation Score" value="98/100" subtext="Top 5% in District" />
-                    </div>
-
-                    {/* Widgets (Refactored) */}
-                    <FarmerWidgets />
-
-                    {/* Listings Table (New) */}
-                    <FarmerListings />
-
                 </div>
+
+                {/* Critical Notification Bar (DYNAMIC) */}
+                {farmerState.status !== "NO_ACTION" && (
+                    <div className="bg-blue-600 text-white px-4 py-3 flex items-start gap-3 shadow-md">
+                        <Bell className="shrink-0 mt-0.5 animate-bounce" size={20} />
+                        <div>
+                            <p className="font-bold text-sm">Status Update</p>
+                            <p className="text-sm opacity-90">
+                                Your <span className="font-bold text-yellow-300">{farmerState.verified_qty}kg {farmerState.crop}</span> is currently: <span className="underline">{farmerState.status}</span>.
+                            </p>
+                        </div>
+                    </div>
+                )}
+            </header>
+
+            {/* 2. Main Action Area - THE 3 BIG CARDS */}
+            <main className="p-4 space-y-4 max-w-md mx-auto mt-2">
+
+                {/* Card 1: LIST NEW CROP (Green) */}
+                <button
+                    onClick={() => setIsSellModalOpen(true)}
+                    className="w-full bg-gradient-to-br from-green-500 to-green-600 active:scale-95 transition-transform rounded-2xl p-6 shadow-lg shadow-green-900/20 text-left relative overflow-hidden group"
+                >
+                    <div className="absolute right-0 top-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
+                        <Plus size={100} />
+                    </div>
+                    <div className="bg-white/20 w-12 h-12 rounded-full flex items-center justify-center mb-4">
+                        <Plus className="text-white" size={28} />
+                    </div>
+                    <h2 className="text-2xl font-bold text-white mb-1">List New Crop</h2>
+                    <p className="text-green-100 text-sm">Sell Wheat, Rice, Corn...</p>
+                </button>
+
+                <div className="grid grid-cols-2 gap-4">
+                    {/* Card 2: ACTIVE BIDS (Blue) */}
+                    <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-16 h-16 bg-blue-50 rounded-bl-full -mr-8 -mt-8"></div>
+                        <Gavel className="text-blue-600 mb-3" size={28} />
+                        <h3 className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">Active Bids</h3>
+                        <div className="text-3xl font-bold text-slate-800">{activeBidsCount}</div>
+                        <p className="text-xs text-slate-400 mt-1">Live Auctions</p>
+                    </div>
+
+                    {/* Card 3: PAYMENT STATUS (Purple) */}
+                    <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-16 h-16 bg-purple-50 rounded-bl-full -mr-8 -mt-8"></div>
+                        <Wallet className="text-purple-600 mb-3" size={28} />
+                        <h3 className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">In Escrow</h3>
+                        <div className="text-xl font-bold text-slate-800 truncate">{paymentPendingAmount}</div>
+                        <p className="text-xs text-slate-400 mt-1">Waiting for delivery</p>
+                    </div>
+                </div>
+
+                {/* Recent Items List (Simplified) */}
+                <div className="pt-4">
+                    <h3 className="font-bold text-slate-700 mb-3 text-sm uppercase tracking-wider">Recent Activity</h3>
+                    <div className="space-y-3">
+                        {/* DYNAMIC ITEM FROM USSD */}
+                        {farmerState.verified_qty > 0 && (
+                            <div className="bg-white p-4 rounded-xl border border-slate-100 flex items-center justify-between shadow-sm border-l-4 border-l-yellow-400">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center text-xl">🌾</div>
+                                    <div>
+                                        <div className="font-bold text-slate-800 text-sm">{farmerState.crop} ({farmerState.verified_qty}Kg)</div>
+                                        <div className="text-xs text-slate-500">Listed via USSD</div>
+                                    </div>
+                                </div>
+                                <span className="bg-yellow-100 text-yellow-700 text-xs font-bold px-2 py-1 rounded-md">{farmerState.status}</span>
+                            </div>
+                        )}
+
+                        <div className="bg-white p-4 rounded-xl border border-slate-100 flex items-center justify-between shadow-sm">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center text-xl">🌾</div>
+                                <div>
+                                    <div className="font-bold text-slate-800 text-sm">Historical Batch</div>
+                                    <div className="text-xs text-slate-500">Completed</div>
+                                </div>
+                            </div>
+                            <span className="bg-green-100 text-green-700 text-xs font-bold px-2 py-1 rounded-md">Paid</span>
+                        </div>
+                    </div>
+                </div>
+
             </main>
 
             {/* Modal Injection */}
             <SellModal isOpen={isSellModalOpen} onClose={() => setIsSellModalOpen(false)} />
-        </div>
-    );
-}
-
-function NavLink({ icon, label, active = false }: { icon: any, label: string, active?: boolean }) {
-    return (
-        <a href="#" className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${active ? "bg-blue-600 text-white" : "text-slate-400 hover:bg-slate-800 hover:text-white"}`}>
-            {icon}
-            <span className="font-medium">{label}</span>
-        </a>
-    );
-}
-
-function StatCard({ label, value, subtext }: { label: string, value: string, subtext: string }) {
-    return (
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-            <div className="text-sm font-medium text-slate-500 mb-2">{label}</div>
-            <div className="text-3xl font-bold text-slate-900 mb-1">{value}</div>
-            <div className="text-xs text-green-600 font-medium">{subtext}</div>
         </div>
     );
 }
