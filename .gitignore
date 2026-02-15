@@ -32,3 +32,11 @@ ipfs_storage/*
 # IDE
 .vscode/
 .idea/
+
+# Personal / Internal Docs
+PPT_CONTENT.md
+DEMO_VIDEO_SCRIPT.md
+VIVA_QA_GUIDE.md
+USER_ROLES_GUIDE.md
+BLOCKCHAIN_DEEP_DIVE.md
+presentation_summary.md

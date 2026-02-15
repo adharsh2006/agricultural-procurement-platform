@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chain-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: chain
+  template:
+    metadata:
+      labels:
+        app: chain
+    spec:
+      containers:
+      - name: chain
+        image: agri-chain:latest
+        imagePullPolicy: Never # Use local image
+        ports:
+        - containerPort: 8545
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: chain-service
+spec:
+  selector:
+    app: chain
+  ports:
+    - protocol: TCP
+      port: 8545
+      targetPort: 8545

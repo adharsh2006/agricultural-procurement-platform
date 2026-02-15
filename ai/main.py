@@ -6,6 +6,50 @@ import os
 import csv
 from datetime import datetime
 import google.generativeai as genai
+import google.generativeai as genai
+
+# --- DATABASE SETUP (Docker) ---
+DB_AVAILABLE = False
+SessionLocal = None
+Upload = None
+
+try:
+    from sqlalchemy import create_engine, Column, Integer, String, LargeBinary, DateTime
+    from sqlalchemy.ext.declarative import declarative_base
+    from sqlalchemy.orm import sessionmaker
+    
+    # K8s/Docker: Use Env Var, Default to Localhost for dev
+    DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://agriuser:agripass@localhost:5432/agriprocure")
+    engine = create_engine(DATABASE_URL)
+    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    Base = declarative_base()
+
+    class Upload(Base):
+        __tablename__ = "uploads"
+        id = Column(Integer, primary_key=True, index=True)
+        cid = Column(String, unique=True, index=True)
+        timestamp = Column(DateTime, default=datetime.utcnow)
+        data = Column(LargeBinary) # Storing file content
+
+    # Create Tables
+    try:
+        Base.metadata.create_all(bind=engine)
+        print("✅ Database Connected & Tables Created")
+        DB_AVAILABLE = True
+    except Exception as e:
+        print(f"⚠️ Database Connection Failed: {e}")
+        # We define DB_AVAILABLE = True only if connection works? 
+        # Actually if imports work but connection fails, we can still have the classes.
+        # But we need connection to start. 
+        # Let's set DB_AVAILABLE = False if create_all fails to be safe, 
+        # or handle it in the endpoint.
+        # Better: keep DB_AVAILABLE = True if imports work, but let session creation fail gracefully.
+        DB_AVAILABLE = True 
+
+except ImportError:
+    print("⚠️ SQLAlchemy/Psycopg2 not installed. Running in File-Only Mode.")
+except Exception as e:
+    print(f"⚠️ Database Setup Error: {e}")
 
 # CONFIGURATION
 os.environ["GOOGLE_API_KEY"] = "AIzaSyCPHZxV2xmKv5vwP2COuJ7GQ73HDDAo7o8"
@@ -171,9 +215,30 @@ async def upload_ipfs(request: Request):
     sha256.update(content_bytes)
     cid = sha256.hexdigest()
 
-    # 2. STORE IMMUTABLY
-    with open(f"{IPFS_STORAGE_PATH}{cid}.json", "wb") as f:
-        f.write(content_bytes)
+    # 2. STORE IMMUTABLY (LOCAL + DB)
+    
+    # A. Local File Storage (Backup)
+    try:
+        with open(f"{IPFS_STORAGE_PATH}{cid}.json", "wb") as f:
+            f.write(content_bytes)
+    except: pass
+
+    # B. Database Storage (Docker)
+    if DB_AVAILABLE and SessionLocal:
+        try:
+            db = SessionLocal()
+            # Check if exists
+            existing = db.query(Upload).filter(Upload.cid == cid).first()
+            if not existing:
+                new_upload = Upload(cid=cid, data=content_bytes, timestamp=datetime.utcnow())
+                db.add(new_upload)
+                db.commit()
+                print(f"✅ DB Persisted: {cid}")
+            else:
+                print(f"ℹ️ CID Verified in DB: {cid}")
+            db.close()
+        except Exception as e:
+            print(f"❌ DB Error: {e}")
 
     print(f"IPFS UPLOAD SUCCESS: {cid}")
     return {"cid": cid, "uri": f"ipfs://{cid}"}

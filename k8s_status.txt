@@ -1,0 +1,29 @@
+﻿NAME                                      READY   STATUS    RESTARTS   AGE    IP          NODE             NOMINATED NODE   READINESS GATES
+pod/backend-deployment-5fddb4d59-2c5kh    1/1     Running   0          3m3s   10.1.0.25   docker-desktop   <none>           <none>
+pod/db-deployment-bd97d5b8b-9ttkp         1/1     Running   0          3m3s   10.1.0.23   docker-desktop   <none>           <none>
+pod/frontend-deployment-674f57766-shg5p   1/1     Running   0          3m3s   10.1.0.24   docker-desktop   <none>           <none>
+
+NAME                       TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)          AGE    SELECTOR
+service/backend-service    NodePort    10.108.4.122     <none>        8001:30001/TCP   3m3s   app=backend
+service/db-service         ClusterIP   10.110.78.156    <none>        5432/TCP         3m3s   app=db
+service/frontend-service   NodePort    10.111.208.103   <none>        3000:30000/TCP   3m3s   app=frontend
+service/kubernetes         ClusterIP   10.96.0.1        <none>        443/TCP          12h    <none>
+
+NAME                                  READY   UP-TO-DATE   AVAILABLE   AGE    CONTAINERS   IMAGES                 SELECTOR
+deployment.apps/backend-deployment    1/1     1            1           3m3s   backend      agri-backend:latest    app=backend
+deployment.apps/db-deployment         1/1     1            1           3m3s   db           postgres:15-alpine     app=db
+deployment.apps/frontend-deployment   1/1     1            1           3m3s   frontend     agri-frontend:latest   app=frontend
+
+NAME                                            DESIRED   CURRENT   READY   AGE    CONTAINERS   IMAGES                 SELECTOR
+replicaset.apps/backend-deployment-5fddb4d59    1         1         1       3m3s   backend      agri-backend:latest    app=backend,pod-template-hash=5fddb4d59
+replicaset.apps/db-deployment-bd97d5b8b         1         1         1       3m3s   db           postgres:15-alpine     app=db,pod-template-hash=bd97d5b8b
+replicaset.apps/frontend-deployment-674f57766   1         1         1       3m3s   frontend     agri-frontend:latest   app=frontend,pod-template-hash=674f57766
+NAME                                  READY   STATUS    RESTARTS   AGE    LABELS
+backend-deployment-5fddb4d59-2c5kh    1/1     Running   0          3m7s   app=backend,pod-template-hash=5fddb4d59
+db-deployment-bd97d5b8b-9ttkp         1/1     Running   0          3m7s   app=db,pod-template-hash=bd97d5b8b
+frontend-deployment-674f57766-shg5p   1/1     Running   0          3m7s   app=frontend,pod-template-hash=674f57766
+NAME               ENDPOINTS           AGE
+backend-service    10.1.0.25:8001      3m27s
+db-service         10.1.0.23:5432      3m27s
+frontend-service   10.1.0.24:3000      3m27s
+kubernetes         192.168.65.3:6443   12h
